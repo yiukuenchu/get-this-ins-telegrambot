@@ -6,6 +6,8 @@ import me.postaddict.instagram.scraper.cookie.DefaultCookieJar;
 import me.postaddict.instagram.scraper.interceptor.ErrorInterceptor;
 import me.postaddict.instagram.scraper.model.*;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -21,8 +23,8 @@ import java.net.URLConnection;
 
 public class MyBot extends TelegramLongPollingBot {
 
-    private String token = "6235652896:AAG2QeGrZ4tzRnE1Ck0P8Dgwj_l9m6nmokE";
-    private String botUsername = "get_this_ins_bot";
+    private String token = "YOUR_BOT_TOKEN";
+    private String botUsername = "YOUR_BOT_USERNAME";
     private Instagram instagram;
 
     public MyBot() {
@@ -49,8 +51,6 @@ public class MyBot extends TelegramLongPollingBot {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-
-
                 }
             } else {
                 // Reply with an error message for invalid Instagram post URL
