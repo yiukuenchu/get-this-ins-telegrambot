@@ -1,14 +1,6 @@
 package bots;
 
 import me.postaddict.instagram.scraper.Instagram;
-import me.postaddict.instagram.scraper.cookie.CookieHashSet;
-import me.postaddict.instagram.scraper.cookie.DefaultCookieJar;
-import me.postaddict.instagram.scraper.interceptor.ErrorInterceptor;
-import me.postaddict.instagram.scraper.model.*;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.logging.HttpLoggingInterceptor;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -23,8 +15,8 @@ import java.net.URLConnection;
 
 public class MyBot extends TelegramLongPollingBot {
 
-    private String token = "6235652896:AAFpT4aYBq2a8EGWsbJtCeuEpiUGqOLhFnw";
-    private String botUsername = "get_this_ins_bot";
+    private String token = "YOUR_BOT_TOKEN";
+    private String botUsername = "YOUR_BOT_USERNAME";
     private Instagram instagram;
 
     public MyBot() {
@@ -36,7 +28,7 @@ public class MyBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             if (isInstagramPostUrl(messageText)) {
-                if (messageText != null) {
+                if (!messageText.equals("")) {
                     String extractedPostUrl = extractInstagramPostUrl(messageText);
                     String photoUrl = getPhotoUrl(extractedPostUrl);
 
