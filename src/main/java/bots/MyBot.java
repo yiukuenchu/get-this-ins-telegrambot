@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import me.postaddict.instagram.scraper.Instagram;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -22,7 +21,6 @@ public class MyBot extends TelegramLongPollingBot {
 
     private String token = "YOUR_BOT_TOKEN";
     private String botUsername = "YOUR_BOT_USERNAME";
-    private Instagram instagram;
 
     public MyBot() {
     }
