@@ -5,10 +5,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMediaGroup;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.media.InputMedia;
+import org.telegram.telegrambots.meta.api.objects.media.InputMediaPhoto;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.BufferedReader;
@@ -16,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MyBot extends TelegramLongPollingBot {
 
@@ -36,24 +40,30 @@ public class MyBot extends TelegramLongPollingBot {
                     String jsonUrl = getJsonUrl(extractedPostUrl);
 
                     try {
-                        ArrayList<String> photoUrls = extractPhotoUrls(jsonUrl);
+                        List<String> photoUrls = extractPhotoUrls(jsonUrl);
+                        System.out.println("The photoUrls are: " + photoUrls);
 
-                        for (String photoUrl : photoUrls) {
-                            sendPhotos(update, photoUrl);
+                        if (photoUrls.size() == 0) {
+                            sendMessage(update, "No photos found!");
+                        } else if (photoUrls.size() == 1) {
+                            sendSinglePhoto(update, photoUrls.get(0));
+                        } else {
+                            sendMultiplePhotos(update, photoUrls);
                         }
+
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
             } else {
                 // Reply with an error message for invalid Instagram post URL
-                sendMessags(update, "Invalid Instagram post URL!");
+                sendMessage(update, "Invalid Instagram post URL!");
             }
         }
     }
 
     // Send photos to the user
-    private void sendPhotos(Update update, String photoUrl) {
+    private void sendSinglePhoto(Update update, String photoUrl) {
         try {
             SendPhoto sendPhoto = SendPhoto.builder()
                     .chatId(update.getMessage().getChatId().toString())
@@ -65,8 +75,28 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
 
+
+    private void sendMultiplePhotos(Update update, List<String> photoUrls) {
+        List<InputMedia> inputMediaPhotos = new ArrayList<>();
+        for (int i = 0; i < photoUrls.size(); i++) {
+            InputMediaPhoto inputMediaPhoto = new InputMediaPhoto();
+            inputMediaPhoto.setMedia(photoUrls.get(i));
+            inputMediaPhotos.add(inputMediaPhoto);
+        }
+
+        try {
+            SendMediaGroup sendMediaGroup = SendMediaGroup.builder()
+                    .chatId(update.getMessage().getChatId().toString())
+                    .medias(inputMediaPhotos)
+                    .build();
+            execute(sendMediaGroup);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
     // Send a message to the user
-    private void sendMessags(Update update, String message) {
+    private void sendMessage(Update update, String message) {
         try {
             SendMessage sendMessage = SendMessage.builder()
                     .chatId(update.getMessage().getChatId().toString())
@@ -109,7 +139,7 @@ public class MyBot extends TelegramLongPollingBot {
     }
 
     // Extract photo URLs from the json data
-    private ArrayList<String> extractPhotoUrls(String jsonUrl) throws IOException {
+    private List<String> extractPhotoUrls(String jsonUrl) throws IOException {
         URL url = new URL(jsonUrl);
         BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
 
@@ -123,12 +153,24 @@ public class MyBot extends TelegramLongPollingBot {
 
         // Parse the JSON data using Gson from reader
         JsonObject jsonObject = new Gson().fromJson(jsonBuilder.toString(), JsonObject.class);
-        JsonArray jsonArray = jsonObject.get("graphql").getAsJsonObject().get("shortcode_media").getAsJsonObject().get("edge_sidecar_to_children").getAsJsonObject().get("edges").getAsJsonArray();
+        JsonArray jsonArray = new JsonArray();
 
-        ArrayList<String> urls = new ArrayList<>();
-        for (JsonElement jsonElement : jsonArray) {
-            String display_url = jsonElement.getAsJsonObject().get("node").getAsJsonObject().get("display_url").getAsString();
+        // Check if the post has multiple photos
+        if (jsonObject.get("graphql").getAsJsonObject().get("shortcode_media").getAsJsonObject().has("edge_sidecar_to_children")) {
+            jsonArray = jsonObject.get("graphql").getAsJsonObject().get("shortcode_media").getAsJsonObject().get("edge_sidecar_to_children").getAsJsonObject().get("edges").getAsJsonArray();
+        }
+
+        List<String> urls = new ArrayList<>();
+        String display_url;
+        // jsonArray.size() == 0 means that the post has only one photo
+        if (jsonArray.size() == 0) {
+            display_url = jsonObject.get("graphql").getAsJsonObject().get("shortcode_media").getAsJsonObject().get("display_url").getAsString();
             urls.add(display_url);
+        } else {
+            for (JsonElement jsonElement : jsonArray) {
+                display_url = jsonElement.getAsJsonObject().get("node").getAsJsonObject().get("display_url").getAsString();
+                urls.add(display_url);
+            }
         }
 
         return urls;
