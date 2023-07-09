@@ -1,5 +1,9 @@
 package bots;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import me.postaddict.instagram.scraper.Instagram;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -8,10 +12,11 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.net.URLConnection;
+import java.util.ArrayList;
 
 public class MyBot extends TelegramLongPollingBot {
 
@@ -30,16 +35,14 @@ public class MyBot extends TelegramLongPollingBot {
             if (isInstagramPostUrl(messageText)) {
                 if (!messageText.equals("")) {
                     String extractedPostUrl = extractInstagramPostUrl(messageText);
-                    String photoUrl = getPhotoUrl(extractedPostUrl);
+                    String jsonUrl = getJsonUrl(extractedPostUrl);
 
                     try {
-                        URLConnection connection = new URL(photoUrl).openConnection();
-                        connection.connect();
-                        InputStream is = connection.getInputStream();
-                        URL realPhotoUrl = connection.getURL();
-                        sendMessags(update, "Here are the photos. Enjoy!");
-                        sendPhotos(update, realPhotoUrl.toString());
-                        is.close();
+                        ArrayList<String> photoUrls = extractPhotoUrls(jsonUrl);
+
+                        for (String photoUrl : photoUrls) {
+                            sendPhotos(update, photoUrl);
+                        }
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -51,6 +54,7 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
 
+    // Send photos to the user
     private void sendPhotos(Update update, String photoUrl) {
         try {
             SendPhoto sendPhoto = SendPhoto.builder()
@@ -63,6 +67,7 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
 
+    // Send a message to the user
     private void sendMessags(Update update, String message) {
         try {
             SendMessage sendMessage = SendMessage.builder()
@@ -75,12 +80,14 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
 
+    // Validate the Instagram post URL
     private boolean isInstagramPostUrl(String url) {
         // Check if the text matches the pattern of an Instagram post URL
         return url.matches("https?:\\/\\/(www\\.)?instagram\\.com\\/p\\/.*");
     }
 
     // Extract the URL of the Instagram post from the post link
+    // Return the URL with short code
     private String extractInstagramPostUrl(String url) {
         // Find the index of '/p' in the URL
         int pIndex = url.indexOf("/p/");
@@ -93,9 +100,42 @@ public class MyBot extends TelegramLongPollingBot {
     }
 
     // Get the URL of the photo in the Instagram post
+    // Not used， can only get the first photo
     private String getPhotoUrl(String url) {
         return url + "media/?size=l";
     }
+
+    // Get the URL of the json data
+    private String getJsonUrl(String url) {
+        return url + "?__a=1&__d=dis";
+    }
+
+    // Extract photo URLs from the json data
+    private ArrayList<String> extractPhotoUrls(String jsonUrl) throws IOException {
+        URL url = new URL(jsonUrl);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+
+        // Read the JSON data
+        StringBuilder jsonBuilder = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            jsonBuilder.append(line);
+        }
+        reader.close();
+
+        // Parse the JSON data using Gson from reader
+        JsonObject jsonObject = new Gson().fromJson(jsonBuilder.toString(), JsonObject.class);
+        JsonArray jsonArray = jsonObject.get("graphql").getAsJsonObject().get("shortcode_media").getAsJsonObject().get("edge_sidecar_to_children").getAsJsonObject().get("edges").getAsJsonArray();
+
+        ArrayList<String> urls = new ArrayList<>();
+        for (JsonElement jsonElement : jsonArray) {
+            String display_url = jsonElement.getAsJsonObject().get("node").getAsJsonObject().get("display_url").getAsString();
+            urls.add(display_url);
+        }
+
+        return urls;
+    }
+
 
     @Override
     public String getBotUsername() {
