@@ -2,6 +2,15 @@
 
 A Telegram bot for retrieving media contents from instagram posts
 
+## Showcase
+
+<img src="showcase.jpeg" width=50% height=50%>
+
+## Features
+
+1. Retrieve single image from an Instagram post
+2. Retrieve multiple images from an Instagram post
+
 ## Requirements
 
 To run this project on your local machine, you need to have：
@@ -21,3 +30,7 @@ To run this project on your local machine:
 4. Change the `token` and `botUsername` in `src/main/java/bots/MyBot.java` to your own
 5. Run `mvn compile exec:java` to start the bot
 6. Go to your Telegram bot and send an Instagram post URL to start using the bot
+
+## Usage
+
+Send an Instagram post URL to the telegram bot, and the bot will send you the media contents in the post.
